@@ -129,15 +129,8 @@ target_link_libraries(nanoai_jni
     z
 )
 
-# Additional optimizations for Android
-if(ANDROID)
-    target_link_libraries(nanoai_jni
-        ${ANDROID_NDK}/sources/android/cpufeatures/cpu-features.c
-    )
-    target_include_directories(nanoai_jni PRIVATE
-        ${ANDROID_NDK}/sources/android/cpufeatures
-    )
-endif()
+# Note: cpu-features removed - not needed for modern NDK (26+)
+# CPU feature detection is handled automatically by the NDK
 
 # Strip debug symbols in release for smaller APK
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
