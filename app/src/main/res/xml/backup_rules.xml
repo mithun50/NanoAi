@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Backup app preferences and RAG data, but not models (too large) -->
+    <include domain="sharedpref" path="." />
+    <include domain="database" path="." />
+    <include domain="file" path="rag_data" />
+    <exclude domain="file" path="models" />
+    <exclude domain="cache" path="." />
+</full-backup-content>

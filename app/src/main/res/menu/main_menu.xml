@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/menu_models"
+        android:icon="@drawable/ic_ai"
+        android:title="@string/menu_models" />
+    <item
+        android:id="@+id/menu_rag"
+        android:icon="@drawable/ic_rag"
+        android:title="@string/menu_rag" />
+    <item
+        android:id="@+id/menu_clear"
+        android:title="@string/menu_clear_chat" />
+    <item
+        android:id="@+id/menu_settings"
+        android:title="@string/menu_settings" />
+</menu>

@@ -1,0 +1,11 @@
+# Template for local.properties
+# Copy to local.properties and update paths for your system
+
+# Android SDK path
+sdk.dir=/path/to/Android/Sdk
+
+# Android NDK path (optional - uses SDK's bundled NDK if not set)
+# ndk.dir=/path/to/Android/Sdk/ndk/25.2.9519653
+
+# CMake path (optional)
+# cmake.dir=/path/to/cmake
