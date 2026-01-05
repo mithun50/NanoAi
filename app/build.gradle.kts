@@ -79,16 +79,6 @@ android {
         buildConfig = true
     }
 
-    // Split APKs by ABI to reduce size
-    splits {
-        abi {
-            isEnable = true
-            reset()
-            include("arm64-v8a", "armeabi-v7a")
-            isUniversalApk = false
-        }
-    }
-
     packaging {
         jniLibs {
             useLegacyPackaging = true
