@@ -210,9 +210,8 @@ class ModelManagerActivity : AppCompatActivity() {
             .setTitle("Download ${model.name}?")
             .setMessage("Size: ${model.sizeMB} MB\nRAM required: ${model.ramRequired}\n\nThis will download the model from HuggingFace.")
             .setPositiveButton("Download") { _, _ ->
-                lifecycleScope.launch {
-                    modelManager.downloadModel(model.downloadUrl, model.fileName)
-                }
+                Toast.makeText(this, "Starting download...", Toast.LENGTH_SHORT).show()
+                modelManager.downloadModel(model.downloadUrl, model.fileName)
             }
             .setNegativeButton("Cancel", null)
             .show()
@@ -243,9 +242,8 @@ class ModelManagerActivity : AppCompatActivity() {
                 val fileName = etFileName.text?.toString()?.trim() ?: "model.gguf"
 
                 if (url.isNotEmpty()) {
-                    lifecycleScope.launch {
-                        modelManager.downloadModel(url, fileName)
-                    }
+                    Toast.makeText(this, "Starting download...", Toast.LENGTH_SHORT).show()
+                    modelManager.downloadModel(url, fileName)
                 }
             }
             .setNegativeButton("Cancel", null)

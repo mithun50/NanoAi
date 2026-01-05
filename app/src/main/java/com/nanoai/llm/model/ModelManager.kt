@@ -1,18 +1,23 @@
 package com.nanoai.llm.model
 
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
 import android.content.SharedPreferences
+import android.os.IBinder
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.nanoai.llm.LlamaBridge
 import com.nanoai.llm.nanoAiApp
+import com.nanoai.llm.service.DownloadState
+import com.nanoai.llm.service.ModelDownloadService
+import com.nanoai.llm.util.NotificationHelper
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import java.io.File
-import java.io.FileInputStream
 import java.io.FileOutputStream
-import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -181,82 +186,93 @@ class ModelManager(private val context: Context) {
         }
 
     /**
-     * Download a model from URL.
+     * Download a model from URL using the download service with notifications.
      */
-    suspend fun downloadModel(
+    fun downloadModel(
         url: String,
         fileName: String,
-        name: String? = null
-    ): Result<ModelInfo> = withContext(Dispatchers.IO) {
-        try {
-            _loadingState.value = LoadingState.Downloading
+        @Suppress("UNUSED_PARAMETER") name: String? = null
+    ) {
+        val finalFileName = if (!fileName.endsWith(".gguf", true)) {
+            "$fileName.gguf"
+        } else {
+            fileName
+        }
 
-            val finalFileName = if (!fileName.endsWith(".gguf", true)) {
-                "$fileName.gguf"
-            } else {
-                fileName
-            }
+        val destFile = File(modelsDir, finalFileName)
+        if (destFile.exists()) {
+            _loadingState.value = LoadingState.Error("Model already exists: $finalFileName")
+            return
+        }
 
-            val destFile = File(modelsDir, finalFileName)
-            if (destFile.exists()) {
-                return@withContext Result.failure(
-                    IllegalStateException("Model already exists: $finalFileName")
-                )
-            }
+        _loadingState.value = LoadingState.Downloading
+        Log.i(TAG, "Starting download: $url -> $finalFileName")
 
-            val connection = URL(url).openConnection() as HttpURLConnection
-            connection.connectTimeout = 30000
-            connection.readTimeout = 30000
-            connection.connect()
+        // Start the download service with notifications
+        ModelDownloadService.start(context, url, finalFileName)
 
-            val totalBytes = connection.contentLengthLong
-            var downloadedBytes = 0L
+        // Bind to service to observe progress
+        val serviceConnection = object : ServiceConnection {
+            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+                val binder = service as? ModelDownloadService.LocalBinder ?: return
+                val downloadService = binder.getService()
 
-            connection.inputStream.use { input ->
-                FileOutputStream(destFile).use { output ->
-                    val buffer = ByteArray(8192)
-                    var bytesRead: Int
-
-                    while (input.read(buffer).also { bytesRead = it } != -1) {
-                        output.write(buffer, 0, bytesRead)
-                        downloadedBytes += bytesRead
-
-                        _downloadProgress.value = DownloadProgress(
-                            fileName = finalFileName,
-                            downloadedBytes = downloadedBytes,
-                            totalBytes = totalBytes,
-                            percent = if (totalBytes > 0) {
-                                (downloadedBytes * 100 / totalBytes).toInt()
-                            } else 0
-                        )
+                // Observe download state
+                CoroutineScope(Dispatchers.Main).launch {
+                    downloadService.downloadState.collect { state ->
+                        when (state) {
+                            is DownloadState.Downloading -> {
+                                _downloadProgress.value = DownloadProgress(
+                                    fileName = state.filename,
+                                    downloadedBytes = state.downloadedBytes,
+                                    totalBytes = state.totalBytes,
+                                    percent = state.progress
+                                )
+                            }
+                            is DownloadState.Completed -> {
+                                // File downloaded, add to model list
+                                val modelFile = File(state.filePath)
+                                if (modelFile.exists()) {
+                                    val modelInfo = createModelInfoFromFile(modelFile).copy(
+                                        source = ModelSource.DOWNLOADED,
+                                        downloadUrl = url
+                                    )
+                                    val currentModels = _installedModels.value.toMutableList()
+                                    currentModels.add(modelInfo)
+                                    _installedModels.value = currentModels.sortedBy { it.name }
+                                    saveModelList(currentModels)
+                                    Log.i(TAG, "Downloaded model: ${modelInfo.name}")
+                                    NotificationHelper.showModelLoadedNotification(context, modelInfo.name)
+                                }
+                                _loadingState.value = LoadingState.Idle
+                                _downloadProgress.value = null
+                                context.unbindService(this@object)
+                            }
+                            is DownloadState.Error -> {
+                                _loadingState.value = LoadingState.Error(state.message)
+                                _downloadProgress.value = null
+                                context.unbindService(this@object)
+                            }
+                            is DownloadState.Cancelled -> {
+                                _loadingState.value = LoadingState.Idle
+                                _downloadProgress.value = null
+                                context.unbindService(this@object)
+                            }
+                            is DownloadState.Idle -> {
+                                // Initial state, do nothing
+                            }
+                        }
                     }
                 }
             }
 
-            // Create model info
-            val modelInfo = createModelInfoFromFile(destFile).copy(
-                name = name ?: destFile.nameWithoutExtension,
-                source = ModelSource.DOWNLOADED,
-                downloadUrl = url
-            )
-
-            // Update list
-            val currentModels = _installedModels.value.toMutableList()
-            currentModels.add(modelInfo)
-            _installedModels.value = currentModels.sortedBy { it.name }
-            saveModelList(currentModels)
-
-            _loadingState.value = LoadingState.Idle
-            _downloadProgress.value = null
-            Log.i(TAG, "Downloaded model: ${modelInfo.name}")
-            Result.success(modelInfo)
-
-        } catch (e: Exception) {
-            _loadingState.value = LoadingState.Error(e.message ?: "Download failed")
-            _downloadProgress.value = null
-            Log.e(TAG, "Download failed", e)
-            Result.failure(e)
+            override fun onServiceDisconnected(name: ComponentName?) {
+                // Service disconnected
+            }
         }
+
+        val intent = Intent(context, ModelDownloadService::class.java)
+        context.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
     }
 
     /**
