@@ -51,9 +51,10 @@ Assistant: Let me fetch that page for you.
      * Process a response and execute any tool calls found.
      * Returns the final response with tool results injected.
      */
+    @Suppress("UNUSED_PARAMETER")
     suspend fun processToolCalls(
         response: String,
-        originalPrompt: String
+        originalPrompt: String // Reserved for future use
     ): ToolResult = withContext(Dispatchers.Default) {
         var processedResponse = response
         var toolsUsed = mutableListOf<String>()
@@ -196,9 +197,10 @@ User: $userPrompt
 Assistant: """
     }
 
+    @Suppress("UNUSED_PARAMETER")
     private fun buildFollowUpPrompt(
         originalPrompt: String,
-        previousResponse: String,
+        previousResponse: String, // Reserved for context
         toolResults: String
     ): String {
         return """Based on the user's question and the information retrieved:

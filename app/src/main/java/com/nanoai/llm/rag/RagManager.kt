@@ -373,6 +373,7 @@ ASSISTANT:
     /**
      * Refresh sources list.
      */
+    @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
     private fun refreshSources() {
         kotlinx.coroutines.GlobalScope.launch {
             val sourceIds = vectorStore.getSources()

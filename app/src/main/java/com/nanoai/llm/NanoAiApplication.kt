@@ -139,6 +139,7 @@ class NanoAiApplication : Application() {
         tempDir.listFiles()?.forEach { it.delete() }
     }
 
+    @Suppress("DEPRECATION")
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
         if (level >= TRIM_MEMORY_MODERATE) {

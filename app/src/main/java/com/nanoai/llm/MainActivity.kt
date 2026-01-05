@@ -61,7 +61,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupWindowInsets() {
         // Handle system bars and keyboard insets
-        ViewCompat.setOnApplyWindowInsetsListener(binding.rootLayout) { view, windowInsets ->
+        ViewCompat.setOnApplyWindowInsetsListener(binding.rootLayout) { _, windowInsets ->
             val systemBars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
             val ime = windowInsets.getInsets(WindowInsetsCompat.Type.ime())
 

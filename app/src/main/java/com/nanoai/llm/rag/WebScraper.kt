@@ -70,7 +70,7 @@ object WebScraper {
         val text = if (mainContent != null) {
             cleanText(mainContent.text())
         } else {
-            cleanText(doc.body()?.text() ?: "")
+            cleanText(doc.body().text())
         }
 
         // Extract links
@@ -131,7 +131,7 @@ object WebScraper {
         }
 
         // Fallback: find the largest text block
-        val children = doc.body()?.children()?.toList() ?: emptyList()
+        val children = doc.body().children().toList()
         return children
             .filter { it.text().length > 200 }
             .maxByOrNull { it.text().length }
