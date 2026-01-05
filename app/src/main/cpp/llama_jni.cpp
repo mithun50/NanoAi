@@ -111,7 +111,7 @@ static std::string detokenize(const std::vector<llama_token>& tokens) {
     std::string result;
     for (llama_token token : tokens) {
         char buf[256];
-        int n = llama_token_to_piece(g_model, token, buf, sizeof(buf), 0, false);
+        int n = llama_token_to_piece(g_model, token, buf, sizeof(buf), false);
         if (n > 0) {
             result.append(buf, n);
         }
