@@ -293,23 +293,31 @@ Java_com_nanoai_llm_LlamaBridge_generate(
     int top_k_val = topK > 0 ? topK : g_params.top_k;
     float rep_pen = repeatPenalty > 0 ? repeatPenalty : g_params.repeat_penalty;
 
-    // Sampling setup
-    llama_sampler* sampler = llama_sampler_chain_init(llama_sampler_chain_default_params());
-    llama_sampler_chain_add(sampler, llama_sampler_init_top_k(top_k_val));
-    llama_sampler_chain_add(sampler, llama_sampler_init_top_p(top_p_val, 1));
-    llama_sampler_chain_add(sampler, llama_sampler_init_temp(temp));
-    llama_sampler_chain_add(sampler, llama_sampler_init_dist(time(nullptr)));
-
     // Generate tokens
     std::vector<llama_token> generated;
     int n_cur = tokens.size();
+    int n_vocab = llama_n_vocab(g_model);
 
     for (int i = 0; i < max_gen && !g_stop_requested; i++) {
-        // Sample next token
-        llama_token new_token = llama_sampler_sample(sampler, g_ctx, -1);
+        // Get logits
+        float* logits = llama_get_logits(g_ctx);
+
+        // Create candidates
+        std::vector<llama_token_data> candidates;
+        candidates.reserve(n_vocab);
+        for (llama_token token_id = 0; token_id < n_vocab; token_id++) {
+            candidates.emplace_back(llama_token_data{token_id, logits[token_id], 0.0f});
+        }
+        llama_token_data_array candidates_p = {candidates.data(), candidates.size(), false};
+
+        // Apply sampling
+        llama_sample_top_k(g_ctx, &candidates_p, top_k_val, 1);
+        llama_sample_top_p(g_ctx, &candidates_p, top_p_val, 1);
+        llama_sample_temp(g_ctx, &candidates_p, temp);
+        llama_token new_token = llama_sample_token(g_ctx, &candidates_p);
 
         // Check for EOS
-        if (llama_token_is_eog(g_model, new_token)) {
+        if (new_token == llama_token_eos(g_model)) {
             LOGD("EOS token reached at position %d", i);
             break;
         }
@@ -329,8 +337,6 @@ Java_com_nanoai_llm_LlamaBridge_generate(
         llama_batch_free(next_batch);
         n_cur++;
     }
-
-    llama_sampler_free(sampler);
     g_is_generating = false;
 
     // Convert tokens to text
