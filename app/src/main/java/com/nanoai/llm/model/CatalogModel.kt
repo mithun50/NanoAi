@@ -56,6 +56,18 @@ object ModelCatalog {
             fileName = "qwen2-0.5b-q8.gguf"
         ),
 
+        // Qwen3 0.6B - Latest Qwen tiny model
+        CatalogModel(
+            id = "qwen3-0.6b-q4",
+            name = "Qwen3 0.6B",
+            description = "Alibaba's latest tiny model with improved quality",
+            sizeMB = 490,
+            ramRequired = "~0.8 GB",
+            quantization = "Q4_K_M",
+            downloadUrl = "https://huggingface.co/Qwen/Qwen3-0.6B-GGUF/resolve/main/qwen3-0.6b-q4_k_m.gguf",
+            fileName = "qwen3-0.6b-q4km.gguf"
+        ),
+
         // Gemma 2B - Google's compact model
         CatalogModel(
             id = "gemma-2b-q4",
