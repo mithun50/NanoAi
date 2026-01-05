@@ -131,9 +131,10 @@ object WebScraper {
         }
 
         // Fallback: find the largest text block
-        return doc.body()?.children()
-            ?.filter { it.text().length > 200 }
-            ?.maxByOrNull { it.text().length }
+        val children = doc.body()?.children()?.toList() ?: emptyList()
+        return children
+            .filter { it.text().length > 200 }
+            .maxByOrNull { it.text().length }
     }
 
     /**

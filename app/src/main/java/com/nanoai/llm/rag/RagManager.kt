@@ -30,6 +30,7 @@ class RagManager(private val context: Context) {
         private const val KEY_TOP_K = "top_k"
         private const val KEY_CHUNK_SIZE = "chunk_size"
         private const val KEY_MIN_SIMILARITY = "min_similarity"
+        const val DEFAULT_SYSTEM_PROMPT = """You are a helpful offline AI assistant. Answer questions accurately and concisely based on the provided context. If the context doesn't contain relevant information, say so and provide your best general knowledge answer."""
     }
 
     private val prefs: SharedPreferences =
@@ -433,9 +434,6 @@ ASSISTANT:
         )
     }
 
-    companion object {
-        const val DEFAULT_SYSTEM_PROMPT = """You are a helpful offline AI assistant. Answer questions accurately and concisely based on the provided context. If the context doesn't contain relevant information, say so and provide your best general knowledge answer."""
-    }
 }
 
 /**
