@@ -1,35 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Primary colors -->
-    <color name="primary">#1E88E5</color>
-    <color name="primary_dark">#1565C0</color>
-    <color name="primary_light">#64B5F6</color>
+    <!-- Primary colors - Monochrome -->
+    <color name="primary">#FFFFFF</color>
+    <color name="primary_dark">#E0E0E0</color>
+    <color name="primary_light">#FFFFFF</color>
 
-    <!-- Accent -->
-    <color name="accent">#00BFA5</color>
-    <color name="accent_dark">#00897B</color>
+    <!-- Accent - Subtle white/gray -->
+    <color name="accent">#B0B0B0</color>
+    <color name="accent_dark">#909090</color>
 
-    <!-- Background -->
-    <color name="background_light">#FAFAFA</color>
-    <color name="background_dark">#121212</color>
-    <color name="surface_light">#FFFFFF</color>
-    <color name="surface_dark">#1E1E1E</color>
+    <!-- Background - Pure black -->
+    <color name="background">#000000</color>
+    <color name="background_light">#000000</color>
+    <color name="background_dark">#000000</color>
+    <color name="surface">#121212</color>
+    <color name="surface_light">#121212</color>
+    <color name="surface_dark">#0A0A0A</color>
+    <color name="surface_elevated">#1E1E1E</color>
 
-    <!-- Text -->
-    <color name="text_primary_light">#212121</color>
-    <color name="text_secondary_light">#757575</color>
+    <!-- Text - White on black -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_primary_light">#FFFFFF</color>
     <color name="text_primary_dark">#FFFFFF</color>
-    <color name="text_secondary_dark">#B3B3B3</color>
+    <color name="text_secondary">#A0A0A0</color>
+    <color name="text_secondary_light">#A0A0A0</color>
+    <color name="text_secondary_dark">#808080</color>
+    <color name="text_hint">#606060</color>
 
-    <!-- Status colors -->
+    <!-- Status colors - Muted for dark theme -->
     <color name="success">#4CAF50</color>
-    <color name="warning">#FF9800</color>
-    <color name="error">#F44336</color>
-    <color name="info">#2196F3</color>
+    <color name="warning">#FFA726</color>
+    <color name="error">#EF5350</color>
+    <color name="info">#42A5F5</color>
 
-    <!-- Chat bubbles -->
-    <color name="user_bubble">#E3F2FD</color>
-    <color name="ai_bubble">#F5F5F5</color>
-    <color name="user_bubble_dark">#1565C0</color>
-    <color name="ai_bubble_dark">#2D2D2D</color>
+    <!-- Chat bubbles - Dark theme -->
+    <color name="user_bubble">#2A2A2A</color>
+    <color name="ai_bubble">#1A1A1A</color>
+    <color name="user_bubble_dark">#333333</color>
+    <color name="ai_bubble_dark">#1A1A1A</color>
+
+    <!-- Borders and dividers -->
+    <color name="divider">#2A2A2A</color>
+    <color name="border">#333333</color>
+
+    <!-- Button colors -->
+    <color name="button_primary">#FFFFFF</color>
+    <color name="button_primary_text">#000000</color>
+    <color name="button_secondary">#2A2A2A</color>
+    <color name="button_secondary_text">#FFFFFF</color>
+
+    <!-- Card/Chip backgrounds -->
+    <color name="chip_background">#1E1E1E</color>
+    <color name="chip_active">#333333</color>
+    <color name="card_background">#121212</color>
 </resources>

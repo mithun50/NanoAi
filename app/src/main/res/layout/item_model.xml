@@ -38,7 +38,7 @@
                 android:layout_weight="1"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:textColor="@color/text_primary_light"
+                android:textColor="@color/text_primary"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 tools:text="Llama 3 8B Q4_K_M" />
@@ -68,7 +68,7 @@
                 android:id="@+id/tvModelSize"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/text_secondary_light"
+                android:textColor="@color/text_secondary"
                 android:textSize="13sp"
                 tools:text="Size: 4.2 GB" />
 
@@ -77,13 +77,13 @@
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="8dp"
                 android:text="•"
-                android:textColor="@color/text_secondary_light" />
+                android:textColor="@color/text_secondary" />
 
             <TextView
                 android:id="@+id/tvQuantization"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="@color/text_secondary_light"
+                android:textColor="@color/text_secondary"
                 android:textSize="13sp"
                 tools:text="Quant: Q4_K_M" />
         </LinearLayout>

@@ -42,7 +42,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
         android:text="💡 Tip: Use Hugging Face direct links or any GGUF file URL.\nRecommended: Q4_K_M or Q4_K_S for mobile."
-        android:textColor="@color/text_secondary_light"
+        android:textColor="@color/text_secondary"
         android:textSize="12sp" />
 
 </LinearLayout>

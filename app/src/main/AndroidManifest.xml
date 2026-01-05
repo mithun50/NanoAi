@@ -66,6 +66,13 @@
             android:parentActivityName=".MainActivity"
             android:screenOrientation="portrait" />
 
+        <!-- Logs Activity -->
+        <activity
+            android:name=".LogActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity"
+            android:screenOrientation="portrait" />
+
         <!-- Inference Service (for background processing) -->
         <service
             android:name=".service.InferenceService"

@@ -1,18 +1,86 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.NanoAi" parent="Theme.Material3.Light.NoActionBar">
+    <!-- Dark theme with black and white colors -->
+    <style name="Theme.NanoAi" parent="Theme.Material3.Dark.NoActionBar">
+        <!-- Primary colors -->
         <item name="colorPrimary">@color/primary</item>
         <item name="colorPrimaryDark">@color/primary_dark</item>
-        <item name="colorAccent">@color/accent</item>
-        <item name="android:colorBackground">@color/background_light</item>
-        <item name="colorSurface">@color/surface_light</item>
-        <item name="android:textColorPrimary">@color/text_primary_light</item>
-        <item name="android:textColorSecondary">@color/text_secondary_light</item>
-        <item name="android:statusBarColor">@color/primary_dark</item>
-        <item name="android:navigationBarColor">@color/background_light</item>
+        <item name="colorPrimaryContainer">@color/surface</item>
+        <item name="colorOnPrimary">@color/background</item>
+        <item name="colorOnPrimaryContainer">@color/text_primary</item>
+
+        <!-- Secondary colors -->
+        <item name="colorSecondary">@color/accent</item>
+        <item name="colorSecondaryContainer">@color/surface_elevated</item>
+        <item name="colorOnSecondary">@color/background</item>
+        <item name="colorOnSecondaryContainer">@color/text_primary</item>
+
+        <!-- Background colors -->
+        <item name="android:colorBackground">@color/background</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorSurfaceVariant">@color/surface_elevated</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="colorOnSurfaceVariant">@color/text_secondary</item>
+
+        <!-- Text colors -->
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:textColorHint">@color/text_hint</item>
+
+        <!-- System bars -->
+        <item name="android:statusBarColor">@color/background</item>
+        <item name="android:navigationBarColor">@color/background</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+
+        <!-- Outline/Border -->
+        <item name="colorOutline">@color/border</item>
+        <item name="colorOutlineVariant">@color/divider</item>
+
+        <!-- Error colors -->
+        <item name="colorError">@color/error</item>
+        <item name="colorOnError">@color/background</item>
     </style>
 
+    <!-- Splash theme -->
     <style name="Theme.NanoAi.Splash" parent="Theme.NanoAi">
-        <item name="android:windowBackground">@color/primary</item>
+        <item name="android:windowBackground">@color/background</item>
+    </style>
+
+    <!-- Toolbar style -->
+    <style name="Widget.NanoAi.Toolbar" parent="Widget.Material3.Toolbar">
+        <item name="android:background">@color/surface</item>
+        <item name="titleTextColor">@color/text_primary</item>
+        <item name="subtitleTextColor">@color/text_secondary</item>
+        <item name="navigationIconTint">@color/text_primary</item>
+    </style>
+
+    <!-- Button styles -->
+    <style name="Widget.NanoAi.Button" parent="Widget.Material3.Button">
+        <item name="android:textColor">@color/button_primary_text</item>
+        <item name="backgroundTint">@color/button_primary</item>
+    </style>
+
+    <style name="Widget.NanoAi.Button.Outlined" parent="Widget.Material3.Button.OutlinedButton">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="strokeColor">@color/border</item>
+    </style>
+
+    <style name="Widget.NanoAi.Button.Text" parent="Widget.Material3.Button.TextButton">
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <!-- Card style -->
+    <style name="Widget.NanoAi.Card" parent="Widget.Material3.CardView.Filled">
+        <item name="cardBackgroundColor">@color/card_background</item>
+        <item name="strokeColor">@color/border</item>
+        <item name="strokeWidth">1dp</item>
+    </style>
+
+    <!-- Text Input style -->
+    <style name="Widget.NanoAi.TextInput" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+        <item name="boxStrokeColor">@color/border</item>
+        <item name="hintTextColor">@color/text_secondary</item>
+        <item name="android:textColorHint">@color/text_hint</item>
     </style>
 </resources>

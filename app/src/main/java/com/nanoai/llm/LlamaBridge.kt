@@ -1,6 +1,7 @@
 package com.nanoai.llm
 
 import android.util.Log
+import com.nanoai.llm.util.AppLogger
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -21,8 +22,10 @@ object LlamaBridge {
         try {
             System.loadLibrary("nanoai_jni")
             Log.i(TAG, "Native library loaded successfully")
+            AppLogger.i(TAG, "Native library loaded successfully")
         } catch (e: UnsatisfiedLinkError) {
             Log.e(TAG, "Failed to load native library: ${e.message}")
+            AppLogger.e(TAG, "Failed to load native library: ${e.message}", e)
             throw RuntimeException("Failed to load native library", e)
         }
     }
@@ -105,6 +108,7 @@ object LlamaBridge {
             val availableMb = getAvailableMemory() / (1024 * 1024)
             val modelSizeMb = file.length() / (1024 * 1024)
             Log.i(TAG, "Loading model: ${file.name} (${modelSizeMb}MB), Available RAM: ${availableMb}MB")
+            AppLogger.i(TAG, "Loading model: ${file.name} (${modelSizeMb}MB), Available RAM: ${availableMb}MB")
 
             if (modelSizeMb > availableMb * 0.8) {
                 Log.w(TAG, "Warning: Model may be too large for available memory")
@@ -113,12 +117,15 @@ object LlamaBridge {
             val success = loadModel(modelPath, contextSize, threads)
             if (success) {
                 Log.i(TAG, "Model loaded: ${getModelDescription()}")
+                AppLogger.i(TAG, "Model loaded: ${getModelDescription()}")
                 Result.success(Unit)
             } else {
+                AppLogger.e(TAG, "Failed to load model")
                 Result.failure(RuntimeException("Failed to load model"))
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error loading model", e)
+            AppLogger.e(TAG, "Error loading model: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -154,6 +161,7 @@ object LlamaBridge {
             }
 
             Log.d(TAG, "Generating with prompt length: ${prompt.length}")
+            AppLogger.d(TAG, "Generating with prompt length: ${prompt.length}")
 
             val result = generate(
                 prompt = prompt,

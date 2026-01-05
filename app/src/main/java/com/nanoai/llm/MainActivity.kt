@@ -81,7 +81,7 @@ class MainActivity : AppCompatActivity() {
                 val color = if (enabled && ragManager.vectorStore.totalChunks > 0) {
                     getColor(R.color.accent)
                 } else {
-                    getColor(R.color.text_secondary_light)
+                    getColor(R.color.text_secondary)
                 }
                 binding.btnRag.setColorFilter(color)
             }
@@ -246,6 +246,10 @@ class MainActivity : AppCompatActivity() {
                     chatAdapter.clearMessages()
                     binding.layoutEmpty.visibility =
                         if (LlamaBridge.isModelLoaded()) View.GONE else View.VISIBLE
+                    true
+                }
+                R.id.menu_logs -> {
+                    startActivity(Intent(this, LogActivity::class.java))
                     true
                 }
                 R.id.menu_settings -> {

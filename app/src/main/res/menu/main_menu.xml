@@ -12,6 +12,9 @@
         android:id="@+id/menu_clear"
         android:title="@string/menu_clear_chat" />
     <item
+        android:id="@+id/menu_logs"
+        android:title="Logs" />
+    <item
         android:id="@+id/menu_settings"
         android:title="@string/menu_settings" />
 </menu>

@@ -20,8 +20,10 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
 import com.nanoai.llm.databinding.ActivityModelManagerBinding
+import com.nanoai.llm.model.CatalogModel
 import com.nanoai.llm.model.DownloadProgress
 import com.nanoai.llm.model.LoadingState
+import com.nanoai.llm.model.ModelCatalog
 import com.nanoai.llm.model.ModelInfo
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -166,15 +168,53 @@ class ModelManagerActivity : AppCompatActivity() {
     }
 
     private fun showAddOptions() {
-        val options = arrayOf("Import from storage", "Download from URL")
+        val options = arrayOf("Browse Model Catalog", "Import from storage", "Download from URL")
         MaterialAlertDialogBuilder(this)
             .setTitle("Add Model")
             .setItems(options) { _, which ->
                 when (which) {
-                    0 -> importFromStorage()
-                    1 -> showDownloadDialog()
+                    0 -> showModelCatalog()
+                    1 -> importFromStorage()
+                    2 -> showDownloadDialog()
                 }
             }
+            .show()
+    }
+
+    private fun showModelCatalog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_model_catalog, null)
+        val rvCatalog = dialogView.findViewById<RecyclerView>(R.id.rvCatalog)
+
+        val dialog = MaterialAlertDialogBuilder(this)
+            .setTitle("Model Catalog")
+            .setView(dialogView)
+            .setNegativeButton("Cancel", null)
+            .create()
+
+        val catalogAdapter = CatalogAdapter { model ->
+            dialog.dismiss()
+            confirmCatalogDownload(model)
+        }
+
+        rvCatalog.apply {
+            layoutManager = LinearLayoutManager(this@ModelManagerActivity)
+            adapter = catalogAdapter
+        }
+
+        catalogAdapter.submitList(ModelCatalog.models)
+        dialog.show()
+    }
+
+    private fun confirmCatalogDownload(model: CatalogModel) {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Download ${model.name}?")
+            .setMessage("Size: ${model.sizeMB} MB\nRAM required: ${model.ramRequired}\n\nThis will download the model from HuggingFace.")
+            .setPositiveButton("Download") { _, _ ->
+                lifecycleScope.launch {
+                    modelManager.downloadModel(model.downloadUrl, model.fileName)
+                }
+            }
+            .setNegativeButton("Cancel", null)
             .show()
     }
 
@@ -294,6 +334,50 @@ class ModelManagerActivity : AppCompatActivity() {
             oldItem.id == newItem.id
 
         override fun areContentsTheSame(oldItem: ModelInfo, newItem: ModelInfo) =
+            oldItem == newItem
+    }
+
+    /**
+     * Catalog model adapter for displaying available models to download.
+     */
+    private inner class CatalogAdapter(
+        private val onDownload: (CatalogModel) -> Unit
+    ) : ListAdapter<CatalogModel, CatalogAdapter.ViewHolder>(CatalogDiffCallback()) {
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+            val view = LayoutInflater.from(parent.context)
+                .inflate(R.layout.item_catalog_model, parent, false)
+            return ViewHolder(view)
+        }
+
+        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+            holder.bind(getItem(position))
+        }
+
+        inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+            private val tvName: TextView = itemView.findViewById(R.id.tvModelName)
+            private val tvDescription: TextView = itemView.findViewById(R.id.tvModelDescription)
+            private val tvSize: TextView = itemView.findViewById(R.id.tvModelSize)
+            private val tvRam: TextView = itemView.findViewById(R.id.tvRamRequired)
+            private val btnDownload: MaterialButton = itemView.findViewById(R.id.btnDownload)
+
+            fun bind(model: CatalogModel) {
+                tvName.text = "${model.name} ${model.quantization}"
+                tvDescription.text = model.description
+                tvSize.text = "${model.sizeMB} MB"
+                tvRam.text = model.ramRequired
+
+                btnDownload.setOnClickListener { onDownload(model) }
+                itemView.setOnClickListener { onDownload(model) }
+            }
+        }
+    }
+
+    private class CatalogDiffCallback : DiffUtil.ItemCallback<CatalogModel>() {
+        override fun areItemsTheSame(oldItem: CatalogModel, newItem: CatalogModel) =
+            oldItem.id == newItem.id
+
+        override fun areContentsTheSame(oldItem: CatalogModel, newItem: CatalogModel) =
             oldItem == newItem
     }
 }

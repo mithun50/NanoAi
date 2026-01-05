@@ -21,7 +21,7 @@
             android:layout_height="wrap_content"
             android:ellipsize="end"
             android:maxLines="1"
-            android:textColor="@color/text_primary_light"
+            android:textColor="@color/text_primary"
             android:textSize="14sp"
             tools:text="Example Website" />
 
@@ -30,7 +30,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="2dp"
-            android:textColor="@color/text_secondary_light"
+            android:textColor="@color/text_secondary"
             android:textSize="12sp"
             tools:text="15 chunks • 2,500 words" />
     </LinearLayout>
