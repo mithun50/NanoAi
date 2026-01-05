@@ -10,6 +10,10 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -funroll-loops")
 set(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG -funroll-loops")
 
+# Suppress harmless warnings from llama.cpp SIMD code
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-double-promotion")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-double-promotion")
+
 # Android-specific settings
 if(ANDROID)
     # Enable NEON for ARM
