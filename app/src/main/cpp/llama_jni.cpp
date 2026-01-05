@@ -31,6 +31,7 @@
 static std::mutex g_mutex;
 static llama_model* g_model = nullptr;
 static llama_context* g_ctx = nullptr;
+static llama_sampler* g_sampler = nullptr;
 static std::atomic<bool> g_is_generating{false};
 static std::atomic<bool> g_stop_requested{false};
 
@@ -88,15 +89,16 @@ static size_t get_available_memory() {
 static std::vector<llama_token> tokenize(const std::string& text, bool add_bos) {
     if (!g_model) return {};
 
+    const llama_vocab* vocab = llama_model_get_vocab(g_model);
     int n_tokens = text.length() + (add_bos ? 1 : 0);
     std::vector<llama_token> tokens(n_tokens);
 
-    n_tokens = llama_tokenize(g_model, text.c_str(), text.length(),
+    n_tokens = llama_tokenize(vocab, text.c_str(), text.length(),
                               tokens.data(), tokens.size(), add_bos, false);
 
     if (n_tokens < 0) {
         tokens.resize(-n_tokens);
-        n_tokens = llama_tokenize(g_model, text.c_str(), text.length(),
+        n_tokens = llama_tokenize(vocab, text.c_str(), text.length(),
                                   tokens.data(), tokens.size(), add_bos, false);
     }
 
@@ -108,10 +110,11 @@ static std::vector<llama_token> tokenize(const std::string& text, bool add_bos) 
 static std::string detokenize(const std::vector<llama_token>& tokens) {
     if (!g_model) return "";
 
+    const llama_vocab* vocab = llama_model_get_vocab(g_model);
     std::string result;
     for (llama_token token : tokens) {
         char buf[256];
-        int n = llama_token_to_piece(g_model, token, buf, sizeof(buf), false);
+        int n = llama_token_to_piece(vocab, token, buf, sizeof(buf), 0, false);
         if (n > 0) {
             result.append(buf, n);
         }
@@ -136,6 +139,10 @@ Java_com_nanoai_llm_LlamaBridge_loadModel(
     std::lock_guard<std::mutex> lock(g_mutex);
 
     // Unload existing model first
+    if (g_sampler) {
+        llama_sampler_free(g_sampler);
+        g_sampler = nullptr;
+    }
     if (g_ctx) {
         llama_free(g_ctx);
         g_ctx = nullptr;
@@ -219,6 +226,10 @@ Java_com_nanoai_llm_LlamaBridge_unloadModel(
 
     LOGI("Unloading model");
 
+    if (g_sampler) {
+        llama_sampler_free(g_sampler);
+        g_sampler = nullptr;
+    }
     if (g_ctx) {
         llama_free(g_ctx);
         g_ctx = nullptr;
@@ -311,10 +322,21 @@ Java_com_nanoai_llm_LlamaBridge_generate(
     int top_k_val = topK > 0 ? topK : g_params.top_k;
     float rep_pen = repeatPenalty > 0 ? repeatPenalty : g_params.repeat_penalty;
 
+    // Create sampler chain
+    llama_sampler_chain_params sparams = llama_sampler_chain_default_params();
+    llama_sampler* smpl = llama_sampler_chain_init(sparams);
+
+    // Add samplers to chain
+    llama_sampler_chain_add(smpl, llama_sampler_init_top_k(top_k_val));
+    llama_sampler_chain_add(smpl, llama_sampler_init_top_p(top_p_val, 1));
+    llama_sampler_chain_add(smpl, llama_sampler_init_temp(temp));
+    llama_sampler_chain_add(smpl, llama_sampler_init_dist((uint32_t)time(nullptr)));
+
     // Generate tokens
     std::vector<llama_token> generated;
     int n_cur = tokens.size();
-    int n_vocab = llama_n_vocab(g_model);
+    const llama_vocab* vocab = llama_model_get_vocab(g_model);
+    int n_vocab = llama_vocab_n_tokens(vocab);
 
     for (int i = 0; i < max_gen && !g_stop_requested; i++) {
         // Get logits
@@ -328,14 +350,15 @@ Java_com_nanoai_llm_LlamaBridge_generate(
         }
         llama_token_data_array candidates_p = {candidates.data(), candidates.size(), false};
 
-        // Apply sampling
-        llama_sample_top_k(g_ctx, &candidates_p, top_k_val, 1);
-        llama_sample_top_p(g_ctx, &candidates_p, top_p_val, 1);
-        llama_sample_temp(g_ctx, &candidates_p, temp);
-        llama_token new_token = llama_sample_token(g_ctx, &candidates_p);
+        // Apply sampler chain
+        llama_sampler_apply(smpl, &candidates_p);
+        llama_token new_token = candidates_p.data[0].id;
+
+        // Accept token in sampler
+        llama_sampler_accept(smpl, new_token);
 
         // Check for EOS
-        if (new_token == llama_token_eos(g_model)) {
+        if (llama_token_is_eog(g_model, new_token)) {
             LOGD("EOS token reached at position %d", i);
             break;
         }
@@ -360,6 +383,9 @@ Java_com_nanoai_llm_LlamaBridge_generate(
         llama_batch_free(next_batch);
         n_cur++;
     }
+
+    // Cleanup sampler
+    llama_sampler_free(smpl);
     g_is_generating = false;
 
     // Convert tokens to text
@@ -436,7 +462,7 @@ Java_com_nanoai_llm_LlamaBridge_getEmbedding(
     llama_batch_free(batch);
 
     // Get embedding dimension
-    int n_embd = llama_n_embd(g_model);
+    int n_embd = llama_model_n_embd(g_model);
     if (n_embd <= 0) {
         LOGW("Model doesn't support embeddings, using logits mean");
         return nullptr;
@@ -535,7 +561,9 @@ Java_com_nanoai_llm_LlamaBridge_getVocabSize(
     jobject /* this */
 ) {
     std::lock_guard<std::mutex> lock(g_mutex);
-    return g_model ? llama_n_vocab(g_model) : 0;
+    if (!g_model) return 0;
+    const llama_vocab* vocab = llama_model_get_vocab(g_model);
+    return llama_vocab_n_tokens(vocab);
 }
 
 JNIEXPORT jint JNICALL
@@ -544,7 +572,7 @@ Java_com_nanoai_llm_LlamaBridge_getEmbeddingSize(
     jobject /* this */
 ) {
     std::lock_guard<std::mutex> lock(g_mutex);
-    return g_model ? llama_n_embd(g_model) : 0;
+    return g_model ? llama_model_n_embd(g_model) : 0;
 }
 
 JNIEXPORT jstring JNICALL
@@ -582,6 +610,10 @@ Java_com_nanoai_llm_LlamaBridge_freeBackend(
 ) {
     std::lock_guard<std::mutex> lock(g_mutex);
 
+    if (g_sampler) {
+        llama_sampler_free(g_sampler);
+        g_sampler = nullptr;
+    }
     if (g_ctx) {
         llama_free(g_ctx);
         g_ctx = nullptr;

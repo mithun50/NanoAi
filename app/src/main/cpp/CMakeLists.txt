@@ -52,8 +52,25 @@ add_definitions(-DGGML_USE_MMAP=1)
 # Check if llama.cpp exists as submodule
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/llama.cpp/CMakeLists.txt")
     message(STATUS "Using llama.cpp from submodule")
+
+    # Configure llama.cpp build options for Android
+    set(LLAMA_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(LLAMA_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(LLAMA_BUILD_SERVER OFF CACHE BOOL "" FORCE)
+    set(LLAMA_BUILD_COMMON OFF CACHE BOOL "" FORCE)
+    set(GGML_CUDA OFF CACHE BOOL "" FORCE)
+    set(GGML_METAL OFF CACHE BOOL "" FORCE)
+    set(GGML_VULKAN OFF CACHE BOOL "" FORCE)
+    set(GGML_OPENCL OFF CACHE BOOL "" FORCE)
+    set(GGML_KOMPUTE OFF CACHE BOOL "" FORCE)
+    set(GGML_SYCL OFF CACHE BOOL "" FORCE)
+    set(GGML_HIPBLAS OFF CACHE BOOL "" FORCE)
+    set(GGML_NATIVE OFF CACHE BOOL "" FORCE)
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+
     add_subdirectory(llama.cpp)
     set(LLAMA_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/llama.cpp/include")
+    set(GGML_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/llama.cpp/ggml/include")
     set(LLAMA_LIB llama)
     set(GGML_LIB ggml)
 else()
@@ -121,6 +138,7 @@ add_library(nanoai_jni SHARED
 # Include directories
 target_include_directories(nanoai_jni PRIVATE
     ${LLAMA_INCLUDE_DIR}
+    ${GGML_INCLUDE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
