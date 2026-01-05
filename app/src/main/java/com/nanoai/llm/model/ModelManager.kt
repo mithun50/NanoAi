@@ -212,7 +212,8 @@ class ModelManager(private val context: Context) {
         ModelDownloadService.start(context, url, finalFileName)
 
         // Bind to service to observe progress
-        val serviceConnection = object : ServiceConnection {
+        var serviceConnection: ServiceConnection? = null
+        serviceConnection = object : ServiceConnection {
             override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
                 val binder = service as? ModelDownloadService.LocalBinder ?: return
                 val downloadService = binder.getService()
@@ -246,17 +247,17 @@ class ModelManager(private val context: Context) {
                                 }
                                 _loadingState.value = LoadingState.Idle
                                 _downloadProgress.value = null
-                                context.unbindService(this@object)
+                                serviceConnection?.let { context.unbindService(it) }
                             }
                             is DownloadState.Error -> {
                                 _loadingState.value = LoadingState.Error(state.message)
                                 _downloadProgress.value = null
-                                context.unbindService(this@object)
+                                serviceConnection?.let { context.unbindService(it) }
                             }
                             is DownloadState.Cancelled -> {
                                 _loadingState.value = LoadingState.Idle
                                 _downloadProgress.value = null
-                                context.unbindService(this@object)
+                                serviceConnection?.let { context.unbindService(it) }
                             }
                             is DownloadState.Idle -> {
                                 // Initial state, do nothing
