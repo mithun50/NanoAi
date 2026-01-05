@@ -2,6 +2,8 @@ package com.nanoai.llm
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
@@ -11,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.updatePadding
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -61,7 +64,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupWindowInsets() {
         // Handle system bars and keyboard insets
-        ViewCompat.setOnApplyWindowInsetsListener(binding.rootLayout) { _, windowInsets ->
+        ViewCompat.setOnApplyWindowInsetsListener(binding.rootLayout) { view, windowInsets ->
             val systemBars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
             val ime = windowInsets.getInsets(WindowInsetsCompat.Type.ime())
 
@@ -72,13 +75,19 @@ class MainActivity : AppCompatActivity() {
             val bottomPadding = maxOf(systemBars.bottom, ime.bottom)
             binding.layoutInput.updatePadding(bottom = bottomPadding)
 
+            // Apply left/right padding to root for gesture navigation
+            view.updatePadding(left = systemBars.left, right = systemBars.right)
+
             // Scroll to bottom when keyboard appears
-            if (ime.bottom > 0) {
+            if (ime.bottom > 0 && ::chatAdapter.isInitialized) {
                 binding.rvMessages.scrollToPosition(chatAdapter.itemCount - 1)
             }
 
-            windowInsets
+            WindowInsetsCompat.CONSUMED
         }
+
+        // Request insets to be applied immediately
+        ViewCompat.requestApplyInsets(binding.rootLayout)
     }
 
     private fun loadLastModel() {
@@ -386,12 +395,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showKeyboard() {
-        val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-        imm.showSoftInput(binding.etMessage, InputMethodManager.SHOW_IMPLICIT)
+        binding.etMessage.requestFocus()
+        // Use WindowInsetsController for more reliable keyboard show
+        Handler(Looper.getMainLooper()).postDelayed({
+            val controller = WindowInsetsControllerCompat(window, binding.etMessage)
+            controller.show(WindowInsetsCompat.Type.ime())
+        }, 100)
     }
 
+    @Suppress("UNUSED")
     private fun hideKeyboard() {
-        val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-        imm.hideSoftInputFromWindow(binding.etMessage.windowToken, 0)
+        val controller = WindowInsetsControllerCompat(window, binding.etMessage)
+        controller.hide(WindowInsetsCompat.Type.ime())
     }
 }

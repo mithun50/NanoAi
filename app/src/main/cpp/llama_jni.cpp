@@ -164,10 +164,23 @@ Java_com_nanoai_llm_LlamaBridge_loadModel(
     model_params.use_mmap = true;  // Memory-mapped for efficiency
     model_params.use_mlock = false; // Don't lock in RAM (save memory)
 
+    // Check file exists and is readable
+    FILE* test_file = fopen(path.c_str(), "rb");
+    if (!test_file) {
+        LOGE("Cannot open model file: %s (errno: %d)", path.c_str(), errno);
+        return JNI_FALSE;
+    }
+    fseek(test_file, 0, SEEK_END);
+    long file_size = ftell(test_file);
+    fclose(test_file);
+    LOGI("Model file size: %ld bytes", file_size);
+
     // Load model
+    LOGI("Calling llama_load_model_from_file...");
     g_model = llama_load_model_from_file(path.c_str(), model_params);
     if (!g_model) {
         LOGE("Failed to load model from: %s", path.c_str());
+        LOGE("This may be due to: incompatible model format, corrupted file, or insufficient memory");
         return JNI_FALSE;
     }
 
