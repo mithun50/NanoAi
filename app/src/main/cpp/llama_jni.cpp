@@ -272,10 +272,15 @@ Java_com_nanoai_llm_LlamaBridge_generate(
 
     // Process prompt in batch
     llama_batch batch = llama_batch_init(tokens.size(), 0, 1);
+    llama_seq_id seq_id = 0;
     for (size_t i = 0; i < tokens.size(); i++) {
-        llama_batch_add(batch, tokens[i], i, {0}, false);
+        batch.token[batch.n_tokens] = tokens[i];
+        batch.pos[batch.n_tokens] = i;
+        batch.n_seq_id[batch.n_tokens] = 1;
+        batch.seq_id[batch.n_tokens] = &seq_id;
+        batch.logits[batch.n_tokens] = (i == tokens.size() - 1);
+        batch.n_tokens++;
     }
-    batch.logits[batch.n_tokens - 1] = true;
 
     if (llama_decode(g_ctx, batch) != 0) {
         llama_batch_free(batch);
@@ -326,7 +331,12 @@ Java_com_nanoai_llm_LlamaBridge_generate(
 
         // Prepare next batch
         llama_batch next_batch = llama_batch_init(1, 0, 1);
-        llama_batch_add(next_batch, new_token, n_cur, {0}, true);
+        next_batch.token[0] = new_token;
+        next_batch.pos[0] = n_cur;
+        next_batch.n_seq_id[0] = 1;
+        next_batch.seq_id[0] = &seq_id;
+        next_batch.logits[0] = true;
+        next_batch.n_tokens = 1;
 
         if (llama_decode(g_ctx, next_batch) != 0) {
             llama_batch_free(next_batch);
@@ -394,8 +404,14 @@ Java_com_nanoai_llm_LlamaBridge_getEmbedding(
     llama_kv_cache_clear(g_ctx);
 
     llama_batch batch = llama_batch_init(tokens.size(), 0, 1);
+    llama_seq_id seq_id = 0;
     for (size_t i = 0; i < tokens.size(); i++) {
-        llama_batch_add(batch, tokens[i], i, {0}, i == tokens.size() - 1);
+        batch.token[batch.n_tokens] = tokens[i];
+        batch.pos[batch.n_tokens] = i;
+        batch.n_seq_id[batch.n_tokens] = 1;
+        batch.seq_id[batch.n_tokens] = &seq_id;
+        batch.logits[batch.n_tokens] = (i == tokens.size() - 1);
+        batch.n_tokens++;
     }
 
     if (llama_decode(g_ctx, batch) != 0) {
