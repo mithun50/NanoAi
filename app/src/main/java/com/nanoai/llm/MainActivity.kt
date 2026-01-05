@@ -4,15 +4,24 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.nanoai.llm.databinding.ActivityMainBinding
 import com.nanoai.llm.model.LoadingState
+import com.nanoai.llm.tools.ToolManager
+import com.nanoai.llm.tools.WebFetcher
 import com.nanoai.llm.ui.ChatAdapter
 import com.nanoai.llm.ui.ChatMessage
+import com.nanoai.llm.util.AppLogger
+import com.nanoai.llm.util.NotificationHelper
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -20,6 +29,10 @@ import kotlinx.coroutines.launch
  * MainActivity - Main chat interface for NanoAi.
  */
 class MainActivity : AppCompatActivity() {
+
+    companion object {
+        private const val TAG = "MainActivity"
+    }
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var chatAdapter: ChatAdapter
@@ -31,11 +44,52 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Enable edge-to-edge display
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        setupWindowInsets()
         setupUI()
         observeState()
+
+        // Auto-load last used model
+        loadLastModel()
+    }
+
+    private fun setupWindowInsets() {
+        // Handle system bars and keyboard insets
+        ViewCompat.setOnApplyWindowInsetsListener(binding.rootLayout) { view, windowInsets ->
+            val systemBars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val ime = windowInsets.getInsets(WindowInsetsCompat.Type.ime())
+
+            // Apply top padding to toolbar for status bar
+            binding.toolbar.updatePadding(top = systemBars.top)
+
+            // Apply bottom padding to input area for navigation bar or keyboard
+            val bottomPadding = maxOf(systemBars.bottom, ime.bottom)
+            binding.layoutInput.updatePadding(bottom = bottomPadding)
+
+            // Scroll to bottom when keyboard appears
+            if (ime.bottom > 0) {
+                binding.rvMessages.scrollToPosition(chatAdapter.itemCount - 1)
+            }
+
+            windowInsets
+        }
+    }
+
+    private fun loadLastModel() {
+        lifecycleScope.launch {
+            try {
+                AppLogger.i(TAG, "Loading last active model...")
+                modelManager.loadLastActiveModel()
+            } catch (e: Exception) {
+                AppLogger.e(TAG, "Failed to load last model: ${e.message}", e)
+            }
+        }
     }
 
     private fun setupUI() {
@@ -63,6 +117,18 @@ class MainActivity : AppCompatActivity() {
                 sendMessage()
                 true
             } else false
+        }
+
+        // Ensure keyboard opens when input field is clicked
+        binding.etMessage.setOnClickListener {
+            binding.etMessage.requestFocus()
+            showKeyboard()
+        }
+
+        binding.etMessage.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                showKeyboard()
+            }
         }
 
         // Load model button (empty state)
@@ -169,21 +235,62 @@ class MainActivity : AppCompatActivity() {
         isGenerating = true
         updateSendButton()
 
+        // Show generating notification
+        NotificationHelper.showGeneratingNotification(this, userMessage)
+
         lifecycleScope.launch {
             try {
+                // Check if message contains a URL for web fetching
+                val extractedUrl = ToolManager.extractUrlFromMessage(userMessage)
+                val needsWebFetch = extractedUrl != null || ToolManager.needsWebBrowsing(userMessage)
+
                 // Check if RAG is enabled and has data
                 val useRag = ragManager.isEnabled.value &&
                         ragManager.vectorStore.totalChunks > 0
 
-                val result = if (useRag) {
-                    ragManager.generateWithRag(
-                        userQuery = userMessage,
-                        params = GenerationParams.BALANCED
-                    )
-                } else {
-                    val prompt = ragManager.buildPrompt(userQuery = userMessage)
-                    LlamaBridge.generateAsync(prompt, GenerationParams.BALANCED)
-                        .map { com.nanoai.llm.rag.RagResponse(it, emptyList(), 0) }
+                val result = when {
+                    // Priority 1: Direct URL fetch
+                    extractedUrl != null -> {
+                        AppLogger.i(TAG, "Fetching URL: $extractedUrl")
+                        chatAdapter.updateLastAiMessage(
+                            text = "Fetching web page...",
+                            isComplete = false
+                        )
+                        // Show web fetch notification
+                        NotificationHelper.showWebFetchNotification(this@MainActivity, extractedUrl)
+
+                        val fetchResult = ToolManager.fetchAndSummarize(
+                            url = extractedUrl,
+                            userQuestion = userMessage,
+                            params = GenerationParams.BALANCED
+                        ).map { com.nanoai.llm.rag.RagResponse(it, emptyList(), 0) }
+
+                        NotificationHelper.cancelWebFetchNotification(this@MainActivity)
+                        fetchResult
+                    }
+
+                    // Priority 2: RAG with documents
+                    useRag -> {
+                        ragManager.generateWithRag(
+                            userQuery = userMessage,
+                            params = GenerationParams.BALANCED
+                        )
+                    }
+
+                    // Priority 3: Tool-enabled generation (model can request URLs)
+                    needsWebFetch -> {
+                        ToolManager.generateWithTools(
+                            prompt = userMessage,
+                            params = GenerationParams.BALANCED
+                        ).map { com.nanoai.llm.rag.RagResponse(it.response, emptyList(), 0) }
+                    }
+
+                    // Default: Standard generation
+                    else -> {
+                        val prompt = ragManager.buildPrompt(userQuery = userMessage)
+                        LlamaBridge.generateAsync(prompt, GenerationParams.BALANCED)
+                            .map { com.nanoai.llm.rag.RagResponse(it, emptyList(), 0) }
+                    }
                 }
 
                 result.onSuccess { response ->
@@ -207,6 +314,9 @@ class MainActivity : AppCompatActivity() {
             } finally {
                 isGenerating = false
                 updateSendButton()
+                // Cancel notifications
+                NotificationHelper.cancelGeneratingNotification(this@MainActivity)
+                NotificationHelper.cancelWebFetchNotification(this@MainActivity)
                 binding.rvMessages.scrollToPosition(chatAdapter.itemCount - 1)
             }
         }
@@ -216,6 +326,9 @@ class MainActivity : AppCompatActivity() {
         LlamaBridge.stopGeneration()
         isGenerating = false
         updateSendButton()
+        // Cancel notifications
+        NotificationHelper.cancelGeneratingNotification(this)
+        NotificationHelper.cancelWebFetchNotification(this)
     }
 
     private fun updateSendButton() {
@@ -270,5 +383,15 @@ class MainActivity : AppCompatActivity() {
         if (LlamaBridge.isModelLoaded()) {
             binding.layoutEmpty.visibility = View.GONE
         }
+    }
+
+    private fun showKeyboard() {
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.showSoftInput(binding.etMessage, InputMethodManager.SHOW_IMPLICIT)
+    }
+
+    private fun hideKeyboard() {
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.hideSoftInputFromWindow(binding.etMessage.windowToken, 0)
     }
 }
