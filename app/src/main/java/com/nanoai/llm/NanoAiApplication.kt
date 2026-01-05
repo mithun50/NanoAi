@@ -38,7 +38,7 @@ class NanoAiApplication : Application() {
     // Directory paths
     val modelsDir: File by lazy { File(filesDir, "models").apply { mkdirs() } }
     val ragDataDir: File by lazy { File(filesDir, "rag_data").apply { mkdirs() } }
-    val cacheDir: File by lazy { File(this.cacheDir, "temp").apply { mkdirs() } }
+    val tempDir: File by lazy { File(cacheDir, "temp").apply { mkdirs() } }
 
     override fun onCreate() {
         super.onCreate()
@@ -97,7 +97,7 @@ class NanoAiApplication : Application() {
         // Ensure all required directories exist
         modelsDir.mkdirs()
         ragDataDir.mkdirs()
-        cacheDir.mkdirs()
+        tempDir.mkdirs()
 
         // Create .nomedia file to prevent models appearing in gallery
         val noMedia = File(modelsDir, ".nomedia")
@@ -136,7 +136,7 @@ class NanoAiApplication : Application() {
         super.onLowMemory()
         Log.w(TAG, "Low memory warning received")
         // Clear caches
-        cacheDir.listFiles()?.forEach { it.delete() }
+        tempDir.listFiles()?.forEach { it.delete() }
     }
 
     override fun onTrimMemory(level: Int) {
@@ -144,7 +144,7 @@ class NanoAiApplication : Application() {
         if (level >= TRIM_MEMORY_MODERATE) {
             Log.w(TAG, "Trim memory: level=$level")
             // Clear non-essential caches
-            cacheDir.listFiles()?.forEach { it.delete() }
+            tempDir.listFiles()?.forEach { it.delete() }
         }
     }
 }
