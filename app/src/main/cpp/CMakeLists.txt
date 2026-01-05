@@ -6,9 +6,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 11)
 
-# Optimization flags for release
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -ffast-math -funroll-loops")
-set(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG -ffast-math -funroll-loops")
+# Optimization flags for release (no -ffast-math due to llama.cpp requirements)
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -funroll-loops")
+set(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG -funroll-loops")
 
 # Android-specific settings
 if(ANDROID)
