@@ -161,7 +161,7 @@ class ModelDownloadService : Service() {
             var currentBytes = downloadedBytes
 
             while (inputStream.read(buffer).also { bytesRead = it } != -1) {
-                if (!coroutineContext.isActive) throw CancellationException()
+                if (!currentCoroutineContext().isActive) throw CancellationException()
 
                 output.write(buffer, 0, bytesRead)
                 currentBytes += bytesRead
